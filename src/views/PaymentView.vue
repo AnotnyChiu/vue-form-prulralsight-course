@@ -39,7 +39,12 @@
             </div>
               </Addressview>
               <div class="form-group">
-                <input type="submit" value="Next" class="btn btn-success" />
+                <input
+                type="submit"
+                value="Next"
+                class="btn btn-success"
+                :disabled="creditCardModel.$invalid"
+                />
               </div>
             </div>
           </div>
@@ -71,11 +76,13 @@
             <div><strong>Credit Card</strong></div>
             <div class="form-group">
               <label for="ccNumber">Credit Card Number</label>
-              <input type="text" class="form-control" v-model="payment.creditcard.number" id="ccNumber">
+              <input type="text" class="form-control" v-model="creditCardModel.number.$model" id="ccNumber">
+              <ValidationMessage :model="creditCardModel.number"/>
             </div>
             <div class="form-group">
               <label for="ccName">Credit Card Name</label>
-              <input type="text" class="form-control" v-model="payment.creditcard.name" id="ccName">
+              <input type="text" class="form-control" v-model="creditCardModel.nameOnCard.$model" id="ccName">
+              <ValidationMessage :model="creditCardModel.nameOnCard"/>
             </div>
             <div class="form-row">
               <div class="form-group col-md-4">
@@ -83,7 +90,7 @@
                 <select 
                 name="" 
                 id="expirationMonth"
-                v-model="payment.creditcard.expirationMonth"
+                v-model="creditCardModel.expirationMonth.$model"
                 class="form-control"
                 >
                   <option
@@ -92,13 +99,14 @@
                   :value="m.number">{{m.name}}
                   </option>
                 </select>
+                <ValidationMessage :model="creditCardModel.expirationMonth"/>
               </div>
               <div class="form-group col-md-4">
                 <label for="expirationYear">Expiration Year</label>
                 <select 
                 name="" 
                 id="expirationYear"
-                v-model="payment.creditcard.expirationYear"
+                v-model="creditCardModel.expirationYear.$model"
                 class="form-control"
                 >
                   <option
@@ -107,16 +115,26 @@
                   :value="y">{{y}}
                   </option>
                 </select>
+                <ValidationMessage :model="creditCardModel.expirationYear"/>
               </div>
               <div class="form-group col-md-4">
                 <label for="cvv">CVV Code</label>
                 <input 
                 type="text" 
                 id="cvv"
-                v-model="payment.creditcard.cvv"
+                v-model="creditCardModel.cvv.$model"
                 class="form-control"
                 />
+                <ValidationMessage :model="creditCardModel.cvv"/>
               </div>
+            </div>
+            <!-- show up all errors in this section -->
+            <div class="text-danger" v-if="creditCardModel.$invalid">
+              <ul>
+                <li v-for="e in creditCardModel.$errors" :key="e">
+                  {{e.$property}} : {{e.$message}}
+                </li>
+              </ul>
             </div>
           </div>
         </div>
@@ -126,6 +144,10 @@
       <pre>
         <!-- use pre here, it will detect it as json object and do the format for us! -->
         {{payment}}
+      </pre>
+      <hr>
+      <pre>
+        {{creditCardModel}}
       </pre>
     </div>
   </div>
@@ -138,10 +160,17 @@ import months from "../lookup/months";
 import formatters from "../formatters";
 import AddressView from './AddressView.vue'
 import state from '../state/index'
+// include validators
+// 按 @ 會幫你列出packages
+import {required} from '@vuelidate/validators'
+import useVuelidate from '@vuelidate/core';
+import ValidationMessage from '../components/ValidationMessages'
+import {creditcard} from '../validators'
 
 export default {
   components:{
-    AddressView
+    AddressView,
+    ValidationMessage
   },
   setup(props, { emit }) {
     // 2種: 用target/opt 然後抓 target.emit 或者直接derefference emit出來
@@ -149,9 +178,16 @@ export default {
 
 
 
-    function onSave() {
-      // emit("onError", "We can't save yet, we don't have api")
-      state.errorMessage.value = "We can't save yet, we don't have api" 
+    async function onSave() {
+      if(await model.creditcard.value.$validate()){
+        // handle validation (notice validator might be async)
+        // emit("onError", "We can't save yet, we don't have api")
+        state.errorMessage.value = "We can't save yet, we don't have api" 
+      }
+      else{
+        alert('validate error')
+      }
+      
     }
 
     // fomatting the data using computed: not bind to object direcly but go through computed first!
@@ -199,6 +235,16 @@ export default {
     // creating the year array
     const years = Array.from({length:10}, (_,i)=> i+2020)
 
+    // validate rules
+
+    const model = state.toModel()
+    // bind validate funciton to our object, then return to dom
+    // same concept while we're dealing with postalcode
+    // in dom we're not binding user input to object itself, but a temp agent
+    // the agent do the verifycation as well as the validation
+    // then bind it back to the actual object
+    // also remember in dom to specify .$model to connect ot the actual object
+
     return {
       // entity
       payment,
@@ -206,6 +252,7 @@ export default {
       months,
       years, 
       zipcode,
+      model,
 
       //function
       onSave,

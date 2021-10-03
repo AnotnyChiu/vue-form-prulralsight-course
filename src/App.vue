@@ -29,4 +29,8 @@ export default{
     }
   },
 }
+
+// note* want your intalled package to also written in package.json
+// >> run --save  e.g. npm install vuelidate --save
 </script>
+

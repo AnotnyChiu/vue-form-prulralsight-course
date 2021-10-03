@@ -1,6 +1,7 @@
 import {ShippingAddressModel, BillingAddressModel} from '../models/addressModel'
 import CreditcardModel from '../models/creditcardModel'
 import {reactive, ref} from 'vue'
+import useVuelidate from '@vuelidate/core'
 
 // could just export class
 // but since the main purpose is for all files to share the same object
@@ -10,5 +11,15 @@ export default{
     shipping: reactive(new ShippingAddressModel()),
     billing: reactive(new BillingAddressModel()),
     creditcard: reactive(new CreditcardModel()),
-    errorMessage: ref("")
+    errorMessage: ref(""),
+
+    toModel(){
+        const rules =  {
+            billing: this.billing.rules,
+            shipping: this.shipping.rules,
+            creditcard: this.creditcard.rules
+        }
+
+        return useVuelidate(rules, this)
+    }
 }
